@@ -1,0 +1,11 @@
+{
+  "server": "",
+  "server_port": 0,
+  "local_port": 0,
+  "password": "",
+  "method": "",
+  "timeout": 180,
+  "local_address": "127.0.0.1",
+  "dns_ipv6": false,
+  "fast_open": false
+}

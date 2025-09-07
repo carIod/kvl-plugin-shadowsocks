@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# 1. Установка прав
+chmod +x /opt/apps/kvl/bin/plugins/shadowsocks.sh
