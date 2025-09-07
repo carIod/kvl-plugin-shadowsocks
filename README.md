@@ -8,9 +8,17 @@
 
 ### Установка на Keenetic
 1. Зайдите в **entware** своего роутера и введите команду 
-```curl -sOfL https://cariod.github.io/kvl/plug_shadow && sh plug_shadow```
-2. После успешной установки задайте ссылку подключения: ```kvl plugin shadowsocks url set```
-3. Укажите выходной интерфейс для подключения: ```kvl vpn set```
+```
+curl -sOfL https://cariod.github.io/kvl/plug_shadow && sh plug_shadow
+```
+3. После успешной установки задайте ссылку подключения:
+```
+kvl plugin shadowsocks url set
+```
+5. Укажите выходной интерфейс для подключения:
+```
+kvl vpn set
+```
 
 Доступные команды
 - set_param — ввод параметров подключения вручную (без использования ссылки).
