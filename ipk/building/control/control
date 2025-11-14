@@ -1,11 +1,11 @@
 Package: kvl-plugin-shadowsocks
-Version: 1.0.0
+Version: 1.0.1
 Depends: shadowsocks-libev-ss-redir, shadowsocks-libev-ss-local, haveged
 Source: /opt/home/carIod/kvl-plugin-shadowsocks
 SourceName: kvl-plugin-shadowsocks
 Section: utils
-SourceDateEpoch: 1757228869
+SourceDateEpoch: 1763110766
 URL: no
 Architecture: all
-Installed-Size: 20337
+Installed-Size: 21484
 Description:  Плагин поддержки протокола Shadowsocks для пакета КВАС ЛАЙТ

@@ -1,10 +1,10 @@
 #!/bin/sh
 
-VERSION=1.0.0
+VERSION=1.0.1
 PROC=ss-redir
 PR_NAME="Shadowsocks-libev"
 PR_TYPE="Прозрачный прокси"
-DESCRIPTION="Протокол Shadowsocks"
+#DESCRIPTION="Протокол Shadowsocks"
 CONF="/opt/etc/kvl/shadowsocks.json"
 ARGS="-u -c $CONF"
 # Передаваемые параметры работы плагина ( метод на текущий момент может быть tproxy - Прозрачный прокси и wg - POINT-TO-POINT тунель)
@@ -107,8 +107,11 @@ parser_url(){
   	local SSR_LINK="$1"
   	[ "$INTERACTIVE" -eq 1 ] && [ -z "$SSR_LINK" ] && read_value "${ansi_green}🔗 Ведите кодированную ссылку в формате ss://:" SSR_LINK
   	[ -z "$SSR_LINK" ] || [[ "$SSR_LINK" =~ ^[Qq]$ ]]  && return 1	
-	SSR_SERVER_IP=""; SSR_SERVER_PORT=""; SSR_SERVER_CRYPT=""; SSR_SERVER_PASSWD=""
+	SSR_SERVER_IP=""; SSR_SERVER_PORT=""; SSR_SERVER_CRYPT=""; SSR_SERVER_PASSWD=""; SSR_DESC=""
 	if [[ -n "${SSR_LINK}" && "${#SSR_LINK}" -gt 6 ]] ; then
+    # Извлечение тега (всё после #)
+    SSR_DESC=$(echo "${SSR_LINK}" | grep -oP '(?<=#).*' || echo "")
+    # Удаление параметров после ? и тега после # для обработки основной части
 		SSR_LINK="$(echo "${SSR_LINK}" | sed -E 's/(.*)[#?\/]\?.*|(.*)#.*/\1\2/')"
 		password=$(echo "${SSR_LINK}" | grep -oP "(?<=ss://).*?(?=@)" | base64 -d )
 		SSR_SERVER_PASSWD=$(echo "${password}" | cut -d ":" -f 2)
@@ -123,6 +126,12 @@ parser_url(){
 		echo -e "${ansi_red}Извлеченные данные не корректны! Введите ссылку с корректными данными!${ansi_std}"
 		return 1
 	fi
+ # Если тег пустой, запрашиваем описание у пользователя
+  if [ -z "$SSR_DESC" ] && [ "$INTERACTIVE" -eq 1 ]; then
+    read_value "${ansi_white}Описание не найдено, вы можете ввести описание соединения:${ansi_std}" SSR_DESC
+    # Если пользователь ввёл пустое описание, устанавливаем значение по умолчанию
+    [ -z "$SSR_DESC" ] && SSR_DESC="no-description"
+  fi
 	return 0
 }
 
@@ -131,6 +140,7 @@ set_param(){
 		# Экранируем символы для применения в sed
 		ESCAPED_PASSWD=$(escape_sed_replace "$SSR_SERVER_PASSWD")
 		sed -i "s/\(\"server\":\).*/\1 \"${SSR_SERVER_IP}\",/; 			\
+        s/\(\"desc\":\).*/\1 \"${SSR_DESC}\",/; 	\
 				s/\(\"server_port\":\).*/\1 ${SSR_SERVER_PORT},/; 		\
 				s/\(\"password\":\).*/\1 \"${ESCAPED_PASSWD}\",/; 	\
 				s/\(\"method\":\).*/\1 \"${SSR_SERVER_CRYPT}\",/;" 		\
@@ -151,7 +161,7 @@ set_param(){
 }
 
 set_param_manual(){
-	SSR_SERVER_IP=""; SSR_SERVER_PORT=""; SSR_SERVER_CRYPT=""; SSR_SERVER_PASSWD=""
+	SSR_SERVER_IP=""; SSR_SERVER_PORT=""; SSR_SERVER_CRYPT=""; SSR_SERVER_PASSWD=""; SSR_DESC=""
 	echo "Необходимо ввести следующие данные:"
 	echo -e "${ansi_green}Хост${ansi_std} сервера, его ${ansi_green}порт, пароль доступа${ansi_std} и ${ansi_green}метод шифрования${ansi_std}"
 	echo -e "${ansi_blue}Пожалуйста, последовательно введите эти данные ниже.${ansi_std}"
@@ -165,6 +175,9 @@ set_param_manual(){
 	[[ "$SSR_SERVER_CRYPT" =~ ^[Qq]$ ]] && return 1
 	read_value "Ведите пароль сервера:" SSR_SERVER_PASSWD 'password'
 	[[ "$SSR_SERVER_PASSWD" =~ ^[Qq]$ ]] && return 1
+  read_value "${ansi_white}Описание не найдено, вы можете ввести описание соединения:${ansi_std}" SSR_DESC
+  [[ "$SSR_DESC" =~ ^[Qq]$ ]] && return 1
+  [ -z "$SSR_DESC" ] && SSR_DESC="no-description"
 	echo
 	set_param
 }
@@ -448,12 +461,13 @@ case "$1" in
     check
     ;;	
   info)
+    desc=$(jq -r '.desc' "$CONF")
     if [ "$INTERACTIVE" -eq 1 ]; then
-        echo "Плагин: $PR_NAME Версия плагина: $VERSION"
-		echo "Тип: $PR_TYPE"
-		echo "Описание: $DESCRIPTION"
+      echo "Плагин: $PR_NAME Версия плагина: $VERSION"
+		  echo "Тип: $PR_TYPE"
+		  echo "Описание: $desc"
     else
-        echo "{\"name\":\"$PR_NAME\",\"description\":\"$DESCRIPTION\",\"type\":\"$PR_TYPE\",\"method\":\"$METOD\"}"
+      echo "{\"name\":\"$PR_NAME\",\"description\":\"$desc\",\"type\":\"$PR_TYPE\",\"method\":\"$METOD\"}"
     fi
     ;;
   get_param)
@@ -473,7 +487,7 @@ case "$1" in
 	  set_param_manual
 	  ;;
   url)
-	case "$2" in
+	  case "$2" in
       set)
         # строки вида ss:// — плагин сам разбирает и сохраняет
 		    parser_url "$3" && set_param
